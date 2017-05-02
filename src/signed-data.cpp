@@ -49,12 +49,14 @@ class SignedData::Impl {
       BIO* mem = BIO_new_mem_buf((void*) der.data(), der.size());
       pkcs7 = d2i_PKCS7_bio(mem, NULL);
       auto ret = (pkcs7 != nullptr) && setSignerInfo(certificate);
-
       cert = Converters::certificateToX509(certificate);
+
       if (ret) {
         success = true;
+      std::cout << "-================================\n";
         return;
       }
+      std::cout << "olala " << (pkcs7 != nullptr) << std::endl;
     }
 
     void fromPem(const std::string pem, const Certificate& certificate) {
@@ -78,10 +80,11 @@ class SignedData::Impl {
 
       auto signerInfos = pkcs7->d.sign->signer_info;
       if (!signerInfos) {
+      std::cout << "!signerinfo\n";
         return false;
       }
 
-      bool found = false;
+      bool found = true;
       for (int i = 0; i < sk_PKCS7_SIGNER_INFO_num(signerInfos); i ++) {
         auto signerInfo = sk_PKCS7_SIGNER_INFO_value(signerInfos, i);
         auto signerDer = Converters::nameToIdentityDer(signerInfo->issuer_and_serial->issuer);
@@ -90,9 +93,13 @@ class SignedData::Impl {
           found = true;
           signerInfoIndex = i;
           break;
+        } else {
+          std::cerr << Utils::hexString(signerDer) << "\n=\n"<< Utils::hexString(id.toDer())<<"\n";
         }
       }
 
+      if (!found)
+      std::cout << "!found\n";
       return found;
     }
 };
